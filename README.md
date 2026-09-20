@@ -84,4 +84,11 @@ hooks/          Custom React hooks
 lib/            Utilities and service clients
 prisma/         Database schema, migrations, and seed script
 providers/      App-level context providers
+docs/           Project documentation (SRS, SDLC, user guide)
 ```
+
+## Documentation
+
+- [Software Requirements Specification (SRS)](docs/SRS_Camero_AI.md)
+- [Software Development Life Cycle (SDLC)](docs/SDLC_Camero_AI.md)
+- [User Deliverable / Product Guide](docs/User_Deliverable_Camero_AI.md)
