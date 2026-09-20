@@ -1,0 +1,204 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// Define the Category model
+model Category {
+  id             String        @id @default(uuid()) @map("_id")
+  name           String        @unique
+  isPublic       Boolean       @default(false)
+  organizationId String?       @db.ObjectId
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+
+model StripeCustomer {
+  id               String @id @default(uuid()) @map("_id")
+  userId           String @unique
+  stripeCustomerId String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum SubscriptionType {
+  FREE
+  BASIC
+  INTERMIDIATE
+  CUSTOM
+}
+
+model Organization {
+  id                 String             @id @default(auto()) @map("_id") @db.ObjectId
+  name               String
+  createdBy          String
+  contactsNumber     String
+  orgEmail           String
+  organizationSize   String
+  knowledgeBase      String?
+  orgJiraDomain      String?
+  isPending          Boolean            @default(false)
+  customerId         String?
+  subscription       Subscription[]    @relation("sub")
+  activeSubscription Subscription?   @relation("ActiveSub" , fields: [activeSubscriptionId ] , references: [id] , onDelete:NoAction , onUpdate:NoAction)
+  activeSubscriptionId String? @db.ObjectId
+  companyArticle     CompanyArticles[]
+  users              User[]
+  branches           Branch[]
+  department         Department[]
+  Category           Category[]
+}
+
+model Subscription {
+  id                String           @id @default(auto()) @map("_id") @db.ObjectId
+  organization      Organization     @relation( "sub" ,fields: [organizationId], references: [id] , onDelete:Cascade)
+  organizationId    String           @db.ObjectId
+  activeSubscriptionForOrganization Organization[] @relation("ActiveSub")
+  razorpaySubscriptionId String?
+  plan              SubscriptionType
+  status            String
+  startDate         DateTime         @default(now())
+  endDate           DateTime?
+  razorpayOrderId   String?
+  paymentId         String?
+  signature         String? 
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+}
+
+
+model Branch {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  name           String?
+  city           String
+  state          String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String       @db.ObjectId
+  users          User[]
+  createdBy      String
+  departments    Department[]
+  serverId       String?      @db.ObjectId // Added field for serverId
+}
+
+model Department {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  name          String?
+  branchId      String        @db.ObjectId
+  serverId      String?       @db.ObjectId
+  branch        Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  organiationId String        @db.ObjectId
+  organization  Organization? @relation(fields: [organiationId], references: [id], onDelete: NoAction)
+  users         User[]
+}
+
+enum Role {
+  ADMIN
+  USER
+  CUSTOMER
+  BR
+  DR
+  SA
+}
+
+model User {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId 
+  userId         String        @unique
+  email          String?       @unique
+  imageUrl       String?
+  firstName      String?
+  lastName       String?
+  userName       String?       @unique
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  organizationId String?       @db.ObjectId
+  branchId       String?       @db.ObjectId
+  branch         Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  deparmentId    String?       @db.ObjectId
+  password       String?
+  department     Department?   @relation(fields: [deparmentId], references: [id], onDelete: SetNull)
+  role           Role
+  badges         Int           @default(0)
+  points         Int           @default(0)
+  comments       Comment[]
+  chats          Chat[]
+  joiningLetter  String?
+  contactNumber  String?
+}
+
+model BypassUser {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  firstName      String?
+  lastName       String?
+  organizationId String?
+  deparmentId    String?  @db.ObjectId
+  branchId       String?  @db.ObjectId
+  userId         String?  @unique
+  email          String?  @unique
+  pass           String?
+  isJoined       Boolean? @default(false)
+  role           String?
+
+  @@index([organizationId, userId, branchId, deparmentId])
+}
+
+
+model Comment {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String
+  user     User   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  message  String
+  entityId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([entityId])
+}
+
+
+
+model CompanyArticles {
+  id             String   @id @default(uuid()) @map("_id")
+  organizationId String  @db.ObjectId  
+  organization   Organization  @relation(fields: [organizationId], references: [id] , onDelete:Cascade)
+  name           String   @unique
+  articles       Article[]
+  createdAt      DateTime @default(now())
+
+}
+
+model Article {
+  id                String   @id @default(uuid()) @map("_id")
+  title             String
+  pdfUrl            String
+  companyArticlesId String  @map("company_articles_id")
+  category          CompanyArticles @relation(fields: [companyArticlesId], references: [id] , onDelete:Cascade)
+  createdAt         DateTime @default(now())
+}
+
+model Chat {
+  id        String    @id @default(uuid()) @map("_id")
+  userId    String
+  user      User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  title     String?   @default("New Chat")
+  messages  Message[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Message {
+  id        String   @id @default(uuid()) @map("_id")
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  role      String   // "user" or "assistant"
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([chatId])
+}
