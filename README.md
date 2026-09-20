@@ -91,4 +91,3 @@ docs/           Project documentation (SRS, SDLC, user guide)
 
 - [Software Requirements Specification (SRS)](docs/SRS_Camero_AI.md)
 - [Software Development Life Cycle (SDLC)](docs/SDLC_Camero_AI.md)
-- [User Deliverable / Product Guide](docs/User_Deliverable_Camero_AI.md)
